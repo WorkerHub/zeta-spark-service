@@ -1,8 +1,6 @@
 services:
   spark:
     image: workerhub/zeta-spark-service:latest
-    # 镜像以 Docker Hub 为准；GHCR 同步发布同一镜像：
-    # image: ghcr.io/workerhub/zeta-spark-service:latest
     container_name: spark-sql-service
     restart: unless-stopped
     ports:

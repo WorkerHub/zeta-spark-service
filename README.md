@@ -29,8 +29,6 @@ docker run -d --name spark-sql-service \
   workerhub/zeta-spark-service:latest
 ```
 
-镜像以 Docker Hub 为准（`workerhub/zeta-spark-service`）；GHCR 同步发布同一镜像（`ghcr.io/workerhub/zeta-spark-service`）。
-
 ## 接入 Zeta（部署步骤）
 
 推荐在 **Instabox** 上部署：一台机器跑一个实例，规格 4 vCPU / 8 GB 足够。按「快速开始」把服务起好后，再做三件事：
