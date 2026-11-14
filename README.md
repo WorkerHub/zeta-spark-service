@@ -1,6 +1,8 @@
-# spark-sql-service
+# Zeta-spark-service
 
 一个极薄的 Spark SQL HTTP 服务：容器里常驻一个 SparkSession（Local 模式），对外提供三个接口——健康检查、「发一句 SQL、拿回结果」和「取消在途查询」。建好的库表持久化在数据卷里，重启不丢。适合练 Spark SQL、给自己的小工具/应用当一个随开随用的 SparkSQL 后端。
+
+**与 Zeta 的关系**：本服务是为 [Zeta](https://github.com/WorkerHub/Zeta) 支持 SparkSQL 而开发的**可选组件**——Zeta 本身不内置 Spark 引擎。不用 SparkSQL 就不需要部署它；要在 Zeta 里用 SparkSQL 数据源，就部署一个本服务作为它的后端（一台实例对应 Zeta 里登记的一个 Spark 数据源）。推荐部署平台是 **Instabox**（接入步骤见下文「接入 Zeta」）。
 
 - Spark 3.5.3，Local 模式（driver 与 executor 同进程），开启 Hive 支持
 - 元数据（库/表定义）存内嵌 Derby，托管表数据以 Parquet 存 warehouse——都在数据目录里，**不是 HDFS**
@@ -11,8 +13,8 @@
 ### docker compose（推荐）
 
 ```bash
-git clone https://github.com/WorkerHub/zeta-spark-service.git
-cd spark-sql-service
+git clone https://github.com/WorkerHub/Zeta-spark-service.git
+cd Zeta-spark-service
 cp .env.example .env   # 把 SPARK_API_TOKEN 改成你自己的随机令牌
 docker compose up -d
 ```
@@ -24,10 +26,22 @@ docker run -d --name spark-sql-service \
   -p 127.0.0.1:8080:8080 \
   -e SPARK_API_TOKEN=你的令牌 \
   -v spark-data:/data/spark \
-  ghcr.io/workerhub/zeta-spark-service:latest
+  workerhub/zeta-spark-service:latest
 ```
 
-镜像也同步发布在 Docker Hub：`<用户名>/zeta-spark-service`（见仓库发布说明）。
+镜像以 Docker Hub 为准（`workerhub/zeta-spark-service`）；GHCR 同步发布同一镜像（`ghcr.io/workerhub/zeta-spark-service`）。
+
+## 接入 Zeta（部署步骤）
+
+推荐在 **Instabox** 上部署：一台机器跑一个实例，规格 4 vCPU / 8 GB 足够。按「快速开始」把服务起好后，再做三件事：
+
+1. **发布接口**：在 Instabox 控制台把这台机器的 `8080` 端口发布为 private 端口。发布后会得到一个**发布 URL** 和一个**平台令牌**——平台令牌只显示一次，当场保存好。
+2. **备齐两个 key**（Zeta 登记时要填，一共三项：发布 URL + 两个令牌）：
+   - **平台令牌（platform token）**：上一步发布端口时 Instabox 给出的那个。Zeta 每次请求都把它放在 `Authorization: Bearer` 头里，由 Instabox 的发布代理校验，请求到不了服务就先被它挡住。
+   - **应用令牌（application token）**：就是你自己设定的 `SPARK_API_TOKEN`，在部署目录的 `.env` 文件里（忘了就打开 .env 看）。Zeta 把它放在 `X-Auth-Token` 头里，由本服务校验。
+3. **在 Zeta 里登记**：到 Zeta 的数据源管理新增一个 Spark 数据源，把发布 URL、平台令牌、应用令牌三项填进去，保存后点「连接」验证——通了就可以在 Zeta 里对这台实例跑 SparkSQL。
+
+在其他平台部署同理：给服务套一个公网可达的 HTTPS 入口，并保证上面两个令牌都有人校验（本服务只校验应用令牌，平台令牌需要入口层校验或至少占位）。
 
 ## 接口
 

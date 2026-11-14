@@ -1,8 +1,8 @@
 services:
   spark:
-    image: ghcr.io/workerhub/zeta-spark-service:latest
-    # Docker Hub 镜像（配置仓库 Secret 后同步发布）：
-    # image: <你的 Docker Hub 用户名>/zeta-spark-service:latest
+    image: workerhub/zeta-spark-service:latest
+    # 镜像以 Docker Hub 为准；GHCR 同步发布同一镜像：
+    # image: ghcr.io/workerhub/zeta-spark-service:latest
     container_name: spark-sql-service
     restart: unless-stopped
     ports:
