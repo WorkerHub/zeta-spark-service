@@ -1,1 +1,10 @@
-RlJPTSBhcGFjaGUvc3Bhcms6My41LjMKCkNPUFkgc2VydmljZS5weSAvb3B0L3NwYXJrLWFwcC9zZXJ2aWNlLnB5CgpFWFBPU0UgODA4MAoKSEVBTFRIQ0hFQ0sgLS1pbnRlcnZhbD0zMHMgLS10aW1lb3V0PTVzIC0tc3RhcnQtcGVyaW9kPTYwcyAtLXJldHJpZXM9MyBcCiAgQ01EIHB5dGhvbjMgLWMgImltcG9ydCB1cmxsaWIucmVxdWVzdDsgdXJsbGliLnJlcXVlc3QudXJsb3BlbignaHR0cDovLzEyNy4wLjAuMTo4MDgwL2hlYWx0aCcsIHRpbWVvdXQ9NCkiIHx8IGV4aXQgMQoKQ01EIFsicHl0aG9uMyIsICIvb3B0L3NwYXJrLWFwcC9zZXJ2aWNlLnB5Il0K
+FROM apache/spark:3.5.3
+
+COPY service.py /opt/spark-app/service.py
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=4)" || exit 1
+
+CMD ["python3", "/opt/spark-app/service.py"]
