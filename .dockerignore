@@ -1,1 +1,7 @@
-LmdpdAouZ2l0aHViCl9fcHljYWNoZV9fCioucHljCi5lbnYKUkVBRE1FLm1kCmRvY2tlci1jb21wb3NlLnltbAo=
+.git
+.github
+__pycache__
+*.pyc
+.env
+README.md
+docker-compose.yml
