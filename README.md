@@ -37,11 +37,11 @@ docker run -d --name spark-sql-service \
 
 1. **发布接口**：在 Instabox 控制台把这台机器的 `8080` 端口发布为 private 端口。发布后会得到一个**发布 URL** 和一个**平台令牌**——平台令牌只显示一次，当场保存好。
 2. **备齐两个 key**（Zeta 登记时要填，一共三项：发布 URL + 两个令牌）：
-   - **平台令牌（platform token）**：上一步发布端口时 Instabox 给出的那个。Zeta 每次请求都把它放在 `Authorization: Bearer` 头里，由 Instabox 的发布代理校验，请求到不了服务就先被它挡住。
+   - **平台令牌（platform token）**：上一步发布端口时 Instabox 给出的那个。Zeta 每次请求都把它放在 `Authorization: Bearer` 头里，由 Instabox 的发布代理校验，请求到不了服务就先被它挡住。**自托管（自己的 VPS 等）没有平台网关、也就没有平台令牌**：这一项在 Zeta 里填任意随机字符串占位即可（Zeta 要求此项非空，随手生成一个，如 `openssl rand -hex 32`），不必在入口层再加一层校验——实际把关的是下面的应用令牌。
    - **应用令牌（application token）**：就是你自己设定的 `SPARK_API_TOKEN`，在部署目录的 `.env` 文件里（忘了就打开 .env 看）。Zeta 把它放在 `X-Auth-Token` 头里，由本服务校验。
 3. **在 Zeta 里登记**：到 Zeta 的数据源管理新增一个 Spark 数据源，把发布 URL、平台令牌、应用令牌三项填进去，保存后点「连接」验证——通了就可以在 Zeta 里对这台实例跑 SparkSQL。
 
-在其他平台部署同理：给服务套一个公网可达的 HTTPS 入口，并保证上面两个令牌都有人校验（本服务只校验应用令牌，平台令牌需要入口层校验或至少占位）。
+在其他平台（包括自己的 VPS）部署同理：给服务套一个公网可达的 HTTPS 入口（如 Caddy 反代自动证书，或 Cloudflare Tunnel），compose 仍只绑 `127.0.0.1`，不要把 8080 裸奔公网。自托管环境没有平台令牌：在 Zeta 登记时平台令牌填任意随机字符串占位即可，不需要在入口层再加一层校验，安全由应用令牌（`SPARK_API_TOKEN`）把关。
 
 ## 接口
 
