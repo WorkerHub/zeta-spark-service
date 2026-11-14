@@ -34,7 +34,7 @@ docker run -d --name spark-sql-service \
 
 在 Instabox 上部署（一台机器一个实例，4 vCPU / 8 GB 足够），服务起好后：
 
-1. **发布接口**：在 Instabox 控制台把 `8080` 发布为 private 端口，得到**发布 URL** 和**平台令牌**（只显示一次，当场保存）。
+1. **发布接口**：在机器终端里执行 `instabox-port publish 8080 --private`，把 `8080` 发布为 private 端口（控制台 UI 只能发布 public 端口，private 必须用这条命令）。命令会当场打印一条带 `?_token=ibp_…` 的链接，只显示一次、当场保存：链接去掉 `?_token=` 的部分是**发布 URL**，`ibp_…` 就是**平台令牌**。
 2. **在 Zeta 里登记**：新增 Spark 数据源，填三项——发布 URL、平台令牌、应用令牌，保存后点「连接」验证。
    - **平台令牌**：Zeta 以 `Authorization: Bearer` 发送，由 Instabox 发布代理校验。**自托管（VPS 等）没有平台网关，这一项填任意随机字符串占位即可**（如 `openssl rand -hex 32`），实际把关的是应用令牌。
    - **应用令牌**：你自己设定的 `SPARK_API_TOKEN`（部署目录 `.env` 里），Zeta 以 `X-Auth-Token` 发送，由本服务校验。
