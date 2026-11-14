@@ -1,0 +1,72 @@
+name: docker-publish
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    # secrets 上下文在 if 里不可用（GitHub 校验直接拒掉整个 workflow），
+    # 先在 job 级 env 里把“配没配 Docker Hub”算成普通环境变量，步骤里再拿 env 判断。
+    env:
+      HAS_DOCKERHUB: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Docker Hub 需要在仓库 Settings → Secrets 里配置
+      # DOCKERHUB_USERNAME 与 DOCKERHUB_TOKEN（Access Token）后才会启用；
+      # 没配置时自动跳过，GHCR 照常发布。
+      - name: Login to Docker Hub
+        if: env.HAS_DOCKERHUB == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Compute image tags
+        id: tags
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          TAGS="ghcr.io/${REPO_LOWER}:latest"
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAGS="$TAGS,ghcr.io/${REPO_LOWER}:${{ github.ref_name }}"
+          fi
+          if [ -n "$DOCKERHUB_USERNAME" ]; then
+            TAGS="$TAGS,docker.io/$DOCKERHUB_USERNAME/zeta-spark-service:latest"
+            if [ "${{ github.ref_type }}" = "tag" ]; then
+              TAGS="$TAGS,docker.io/$DOCKERHUB_USERNAME/zeta-spark-service:${{ github.ref_name }}"
+            fi
+          fi
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
